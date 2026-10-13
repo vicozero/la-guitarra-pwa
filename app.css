@@ -1,0 +1,247 @@
+/* La Guitarra · Disponibilidad — hoja de estilo del PWA.
+   Aspecto tomado del APK Android: verde #0F604C, ink #172F2B, fondo #F2F6F4. */
+:root {
+  --ink: #172F2B;
+  --green: #0F604C;
+  --green-dark: #0B4A3A;
+  --muted: #637570;
+  --bg: #F2F6F4;
+  --line: #D5E2DB;
+  --line-soft: #E4EDE8;
+  --card: #FFFFFF;
+  --chart0: #2C9E65;
+  --chart1: #EB792B;
+  --chart2: #CD444B;
+  --chart3: #D7A426;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.35;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+
+.splash { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 40px; }
+.splash-logo { font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--green); }
+.splash-text { font-size: 14px; color: var(--muted); }
+
+/* ---- encabezado ---- */
+.hd {
+  background: linear-gradient(180deg, var(--green), var(--green-dark));
+  color: #fff;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 2px 10px rgba(15, 96, 76, .18);
+}
+.hd .txt:nth-child(2) { margin-top: 2px; }
+
+/* ---- cuerpo ---- */
+.body { flex: 1; padding: 12px 12px calc(84px + env(safe-area-inset-bottom, 0px)); }
+.txt { word-break: break-word; white-space: pre-line; }
+
+/* ---- tarjetas ---- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(23, 47, 43, .03);
+}
+.list .card { margin-bottom: 10px; }
+
+/* ---- botones ---- */
+.btn {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--green);
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: filter .12s ease, transform .05s ease;
+}
+.btn:active { transform: translateY(1px); filter: brightness(.97); }
+.btn.filled { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* ---- filas ---- */
+.row { display: flex; gap: 8px; align-items: center; }
+.row .btn { margin-top: 10px; }
+.row.metric-row { gap: 6px; align-items: stretch; }
+.row.metric-row .metric { margin-bottom: 12px; }
+.exec-head { align-items: center; gap: 10px; margin-bottom: 6px; }
+.legend-col { flex: 1; }
+
+/* ---- métricas ---- */
+.metric {
+  flex: 1;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  padding: 12px 12px 10px;
+}
+.metric .bar { margin: 8px 0 6px; }
+
+/* ---- barras ---- */
+.bar { height: 6px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .25s ease; }
+.bar-chart { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--line-soft); margin: 10px 0 12px; }
+.bar-chart .seg { height: 100%; }
+
+/* ---- dona ---- */
+.donut {
+  width: 106px; height: 106px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; position: relative;
+}
+.donut-inner {
+  width: 66px; height: 66px; border-radius: 50%;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+
+/* ---- leyenda ---- */
+.legend-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+
+/* ---- estado / badge ---- */
+.badge { display: inline-block; }
+
+/* ---- pestañas ---- */
+.tabs {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 30;
+}
+.tab {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 8px 2px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.nav-icon { width: 22px; height: 22px; display: block; }
+.tab-label { font-size: 11px; }
+
+/* ---- formularios ---- */
+.field, .select {
+  display: block;
+  width: 100%;
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  font-family: inherit;
+}
+textarea.field { resize: vertical; min-height: 52px; }
+.select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; font-size: 14px; }
+.check input { width: 20px; height: 20px; accent-color: var(--green); }
+.pair { flex: 1; min-width: 0; }
+.pair .field { margin-bottom: 6px; }
+
+.link { cursor: pointer; }
+.caret { margin-left: 6px; }
+.expand { margin-top: 6px; }
+
+/* ---- leyendas de color ---- */
+.legend-row .txt { white-space: nowrap; }
+
+/* ---- modales ---- */
+.overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(11, 34, 28, .48);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+}
+.modal {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 560px;
+  max-height: 92vh; display: flex; flex-direction: column;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+  overflow: hidden;
+}
+.modal.full { max-width: 760px; }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--line-soft);
+  background: #fff; position: sticky; top: 0;
+}
+.modal-title { font-size: 17px; font-weight: 700; color: var(--ink); }
+.modal-x {
+  appearance: none; border: 0; background: transparent; font-size: 26px;
+  line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px;
+}
+.modal-body { padding: 14px 16px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.modal-actions .btn { width: auto; flex: 1; margin-top: 0; }
+
+/* ---- avisos ---- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: rgba(23, 47, 43, .96); color: #fff;
+  padding: 11px 16px; border-radius: 12px; font-size: 14px;
+  max-width: calc(100% - 32px); text-align: center; z-index: 90;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .3);
+  opacity: 1; transition: opacity .4s ease;
+}
+.toast.out { opacity: 0; }
+
+/* ---- ocupado ---- */
+.busy { background: #fff; border-radius: 16px; padding: 22px 26px; text-align: center; min-width: 180px; }
+.spinner {
+  width: 30px; height: 30px; margin: 0 auto 12px;
+  border: 3px solid var(--line); border-top-color: var(--green);
+  border-radius: 50%; animation: spin .9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.busy-msg { font-size: 14px; color: var(--muted); }
+
+/* ---- toasts + acciones ---- */
+.modal-actions { flex-wrap: wrap; }
+
+/* ---- firma y fotos ---- */
+.sig-wrap { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 6px; margin: 8px 0; }
+.sig { display: block; width: 100%; height: 190px; border-radius: 8px; touch-action: none; background: #fff; }
+.sig-img { display: block; max-width: 100%; border: 1px dashed var(--line); border-radius: 10px; margin: 8px 0; background: #fff; }
+.photo { display: block; width: 100%; border-radius: 12px; margin: 8px 0; border: 1px solid var(--line); }
+.preview-img { display: block; width: 100%; border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; }
+
+/* ---- avisos de texto ---- */
+.badge { display: inline-block; }
+
+@media (min-width: 640px) {
+  .body { max-width: 760px; margin: 0 auto; width: 100%; padding-left: 16px; padding-right: 16px; }
+  .tabs { position: sticky; }
+}
