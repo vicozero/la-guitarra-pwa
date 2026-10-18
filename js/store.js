@@ -38,6 +38,32 @@
     });
   }
 
+  // Actualiza únicamente el nombre; conserva identificación, capturas e historial.
+  function equipmentName(name) {
+    return typeof name === 'string' ? name.replace(/\bPALA\b/gi, 'SCOOPTRAM') : name;
+  }
+
+  function migrateEquipmentNames() {
+    var changed = false;
+    function rename(item) {
+      if (!item || typeof item !== 'object') return;
+      var name = equipmentName(item.equipo);
+      if (name !== item.equipo) { item.equipo = name; changed = true; }
+    }
+    function updateRow(row, list) {
+      if (!row || typeof row.data !== 'string') return;
+      var value;
+      try { value = JSON.parse(row.data); } catch (e) { return; }
+      var before = JSON.stringify(value);
+      if (list && Array.isArray(value)) value.forEach(rename);
+      else if (!list) rename(value);
+      if (JSON.stringify(value) !== before) row.data = JSON.stringify(value);
+    }
+    root.equipment.forEach(function (row) { updateRow(row, false); });
+    root.turns.forEach(function (row) { updateRow(row, true); });
+    return changed;
+  }
+
   function load() {
     return openDb().then(function () {
       return req(db.transaction('kv', 'readonly').objectStore('kv').get('data'));
@@ -46,6 +72,7 @@
       for (var i = 0; i < BACKUP_TABLES.length; i++) {
         if (!Array.isArray(root[BACKUP_TABLES[i]])) root[BACKUP_TABLES[i]] = [];
       }
+      if (migrateEquipmentNames()) return persist().then(function () { return root; });
       return root;
     });
   }
@@ -192,7 +219,7 @@
 
   function backup() { return U.clone(root); }
 
-  function restore(source) { validate(source); root = source; return save(); }
+  function restore(source) { validate(source); root = source; migrateEquipmentNames(); return save(); }
 
   /* ---- validación (OperationsStore.validate) ---- */
   function b64len(b64) { try { return atob(b64).length; } catch (e) { throw new Error('Credencial inválida'); } }
@@ -261,7 +288,7 @@
   function mediaKeys() { return req(db.transaction('media', 'readonly').objectStore('media').getAllKeys()); }
 
   LG.store = {
-    empty: empty, load: load, save: save, persistNow: persist,
+    equipmentName: equipmentName, empty: empty, load: load, save: save, persistNow: persist,
     setting: setting, set: set, meta: meta, draft: draft, removeDraft: removeDraft,
     current: current, setCurrent: setCurrent, initialized: initialized,
     turnKey: turnKey, archive: archive, hasTurn: hasTurn, removeTurn: removeTurn, renameTurn: renameTurn,

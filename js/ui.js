@@ -553,6 +553,7 @@
     var hadDraft = draft !== '';
     if (hadDraft) { try { source = JSON.parse(draft); } catch (er) { } }
 
+    source.equipo = S.equipmentName(source.equipo);
     var m = openModal(index < 0 ? 'Agregar equipo' : 'Capturar equipo', { full: true });
     var form = m.content;
     var fields = {};
