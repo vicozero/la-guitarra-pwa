@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var LG = (window.LG = window.LG || {});
-  var U = LG.util, S = LG.store, R = LG.reports, M = LG.media;
+  var U = LG.util, S = LG.store, R = LG.reports, M = LG.media, Sync = LG.sync;
 
   /* Colores del APK. */
   var INK = '#172F2B', GREEN = '#0F604C', MUTED = '#637570';
@@ -428,7 +428,8 @@
       }
     } catch (err) { error(err); return; }
     S.archive(app.records, meta()).then(function () { return saveRecords(); })
-      .then(function () { toast('Turno guardado en el historial'); })
+      .then(function () { return Sync.enqueue(app.records, meta(), { user: app.user, role: app.role }); })
+      .then(function () { toast('Turno guardado. Sincronización pendiente: ' + Sync.queue().length + ' equipos'); })
       .catch(error);
   }
 
@@ -734,6 +735,13 @@
     btn(output, 'Exportar Excel / CSV', false, function () { csvDialog(); });
     btn(output, 'Fotos y firma del turno', false, function () { evidence(); });
 
+    var syncCard = card(dom.body);
+    t(syncCard, 'Sincronización de supervisión', 19, INK, true);
+    t(syncCard, 'Envía al portal las horas, disponibilidad y utilización de cada equipo por supervisor.', 12, MUTED, false);
+    t(syncCard, Sync.queue().length ? Sync.queue().length + ' captura(s) pendientes en este dispositivo.' : 'Sin capturas pendientes de envío.', 12, Sync.queue().length ? '#B67513' : GREEN, false);
+    if (canAdmin()) btn(syncCard, 'Configurar portal', false, function () { syncSettings(); });
+    btn(syncCard, 'Sincronizar ahora', true, function () { syncNow(); });
+
     var history = card(dom.body);
     t(history, 'Historial y respaldo', 19, INK, true);
     btn(history, 'Turnos guardados', false, function () { historyDialog(); });
@@ -741,6 +749,25 @@
     btn(history, 'Respaldar datos', false, function () { backup(); });
     if (canAdmin()) btn(history, 'Importar respaldo', false, function () { importBackup(); });
     t(history, 'El respaldo incluye historial, equipos, fotos, firmas, \u00f3rdenes y preventivos.', 12, MUTED, false);
+  }
+
+  function syncSettings() {
+    var m = openModal('Configuración del portal');
+    t(m.content, 'La URL y la clave se guardan únicamente en este dispositivo. No se incluyen en reportes ni respaldos.', 13, MUTED, false);
+    var current = Sync.config();
+    var url = field(m.content, 'URL del portal', current.url || Sync.defaultUrl, false);
+    var apiKey = field(m.content, 'Clave de publicación del portal', current.key, false); apiKey.type = 'password';
+    btn(m.content, 'Guardar configuración', true, function () {
+      var cleanUrl = opt(url.value).trim().replace(/\/$/, ''), cleanKey = opt(apiKey.value).trim();
+      if (!/^https:\/\//i.test(cleanUrl) || cleanKey.length < 16) { toast('Revisa la URL y la clave del portal'); return; }
+      Promise.all([S.set('portal-api-url', cleanUrl), S.set('portal-api-key', cleanKey)]).then(function () { m.close(); toast('Configuración local guardada'); }).catch(error);
+    });
+  }
+
+  function syncNow() {
+    if (!Sync.configured()) { if (canAdmin()) syncSettings(); else toast('Pide a un administrador configurar el portal'); return; }
+    var loading = busyOverlay('Sincronizando supervisión…');
+    Sync.publish().then(function (result) { loading.remove(); toast(result.count ? result.count + ' captura(s) sincronizadas' : 'No hay capturas pendientes'); show(3); }).catch(function (err) { loading.remove(); error(err); });
   }
 
   function executive(parent) {

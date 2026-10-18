@@ -5,7 +5,7 @@
    Sube CACHE al publicar cambios importantes. */
 'use strict';
 
-var CACHE = 'laguitarra-v1.1.0-diseno';
+var CACHE = 'laguitarra-v1.1.1-supervision';
 
 var FILES = [
   './',
@@ -22,6 +22,7 @@ var FILES = [
   './js/pdf.js',
   './js/xlsx.js',
   './js/store.js',
+  './js/sync.js',
   './js/catalog.js',
   './js/media.js',
   './js/report-doc.js',
