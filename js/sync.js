@@ -30,6 +30,20 @@
     }
     return out;
   }
+  function transportRow(row) {
+    var supervisor = String(row.supervisor || 'Sin supervisor').replace(/[|\n\r]/g, ' ').trim();
+    var status = String(row.status || 'SIN ESTADO').replace(/[|\n\r]/g, ' ').trim();
+    return {
+      date: row.date, equipment: row.equipment, description: row.description, family: row.family, shift: row.shift,
+      component: 'SUPERVISIÓN · ' + supervisor, hi: '', hf: '', worked_hours: row.worked_hours,
+      mp_hours: row.mp_hours, mc_hours: row.mc_hours, standby_hours: row.standby_hours, stops: 0,
+      status: 'SUPERVISIÓN|' + status + '|A=' + (row.availability == null ? '' : Number(row.availability).toFixed(2)) + '|U=' + (row.utilization == null ? '' : Number(row.utilization).toFixed(2))
+    };
+  }
+  function sameTransport(row, candidate) {
+    return String(row.date || '') === String(candidate.date || '') && String(row.equipment || '') === String(candidate.equipment || '') &&
+      String(row.shift || '') === String(candidate.shift || '') && String(row.component || '') === String(candidate.component || '');
+  }
   function queue() { try { return JSON.parse(S.setting('portal-sync-pending') || '[]'); } catch (e) { return []; } }
   function saveQueue(value) { return S.set('portal-sync-pending', JSON.stringify(value)); }
   function enqueue(records, meta, identity) {
@@ -47,16 +61,21 @@
       if (!response.ok) throw new Error('No se pudo leer el portal (' + response.status + ').');
       return response.json();
     }).then(function (payload) {
-      var previous = Array.isArray(payload.supervision) ? payload.supervision : [];
-      var merged = {}, rows = previous.concat(pending);
-      rows.forEach(function (row) { if (row && row.source_id) merged[row.source_id] = row; });
-      payload.supervision = Object.keys(merged).map(function (id) { return merged[id]; });
+      var current = Array.isArray(payload.bitacora) ? payload.bitacora : [];
+      pending.map(transportRow).forEach(function (row) {
+        if (!current.some(function (item) { return sameTransport(item || {}, row); })) current.push(row);
+      });
+      payload.bitacora = current;
       return fetch(c.url + '/api/portal/snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Portal-API-Key': c.key }, body: JSON.stringify(payload) });
     }).then(function (response) {
       if (!response.ok) throw new Error('El portal rechazó la sincronización (' + response.status + ').');
       return fetch(c.url + '/api/portal', { cache: 'no-store' });
     }).then(function (response) { return response.json(); }).then(function (payload) {
-      if (!Array.isArray(payload.supervision)) throw new Error('La API actual todavía no acepta registros de supervisión. El turno quedó pendiente en este dispositivo.');
+      var delivered = pending.every(function (row) {
+        var expected = transportRow(row);
+        return Array.isArray(payload.bitacora) && payload.bitacora.some(function (item) { return sameTransport(item || {}, expected); });
+      });
+      if (!delivered) throw new Error('La API no confirmó los registros de supervisión. El turno quedó pendiente en este dispositivo.');
       return saveQueue([]).then(function () { return { count: pending.length }; });
     });
   }
