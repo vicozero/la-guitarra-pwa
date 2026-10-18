@@ -307,7 +307,7 @@
       if (!m.fecha) m = { fecha: U.today(), turno: 'D\u00eda', supervisor: '', diesel: '' };
       applyMeta(m);
       app.ready = true;
-      return M.image('assets/referencia.jpg').then(function (img) { app.logo = img; }, function () { app.logo = null; });
+      return M.image('assets/logo.png').then(function (img) { app.logo = img; }, function () { app.logo = null; });
     }).then(function () {
       show(0);
       var users = S.rows('users');
@@ -339,7 +339,7 @@
     var root = document.getElementById('app');
     root.innerHTML = '';
     var header = e('header', 'hd');
-    var brand=e('button','brand');brand.type='button';brand.innerHTML='<svg viewBox="0 0 44 32" aria-hidden="true"><path d="M1 29L17 8l6 8 6-14 14 27z" fill="currentColor"/><path d="M12 19l5-7 6 8 6-13 6 12-6-6-5 12-7-8z" fill="white"/></svg><span>La Guitarra</span>';
+    var brand=e('button','brand');brand.type='button';brand.innerHTML='<img src="assets/logo.png" alt="Sierra Madre Gold & Silver"><span>La Guitarra</span>';
     brand.onclick=function(){show(0);};header.appendChild(brand);
     var context=e('div','header-context');t(context,shortDate(meta().fecha),12,MUTED,false);
     var u=e('button','profile-link');u.type='button';u.textContent=app.user || 'Perfiles';u.title=profileLabel();u.onclick=function(){profiles();};context.appendChild(u);header.appendChild(context);
