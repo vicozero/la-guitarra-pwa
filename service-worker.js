@@ -5,7 +5,7 @@
    Sube CACHE al publicar cambios importantes. */
 'use strict';
 
-var CACHE = 'laguitarra-v1.0.4-scooptram';
+var CACHE = 'laguitarra-v1.1.0-diseno';
 
 var FILES = [
   './',

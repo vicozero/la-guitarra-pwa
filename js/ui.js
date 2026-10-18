@@ -45,11 +45,12 @@
     return b;
   }
 
+  var fieldSequence=0;
   function field(parent, label, value, numeric) {
-    t(parent, label, 12, MUTED, true);
+    var fieldLabel=t(parent, label, 12, MUTED, true,'label');
     var multiline = /^(Observaciones|Personal)/.test(opt(label));
     var el = e(multiline ? 'textarea' : 'input', 'field');
-    el.value = opt(value);
+    el.value = opt(value);el.id='lg-field-'+(++fieldSequence);fieldLabel.htmlFor=el.id;
     if (multiline) el.rows = 2;
     else { el.type = 'text'; if (numeric) el.setAttribute('inputmode', 'decimal'); }
     parent.appendChild(el);
@@ -74,8 +75,8 @@
     return field(col, label, value, true);
   }
   function spinner(parent, label, values, selected) {
-    t(parent, label, 12, MUTED, true);
-    var s = selectEl(values, selected);
+    var labelEl=t(parent, label, 12, MUTED, true,'label');
+    var s = selectEl(values, selected);s.id='lg-select-'+(++fieldSequence);labelEl.htmlFor=s.id;
     parent.appendChild(s);
     return s;
   }
@@ -106,10 +107,11 @@
   function openModal(title, opts) {
     opts = opts || {};
     var overlay = e('div', 'overlay');
+    overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label',title);
     var panel = e('div', 'modal' + (opts.full ? ' full' : ''));
     var head = e('div', 'modal-head');
     var h = e('div', 'modal-title'); h.textContent = title; head.appendChild(h);
-    if (!opts.noClose) { var x = e('button', 'modal-x'); x.type = 'button'; x.textContent = '\u00d7'; head.appendChild(x); }
+    if (!opts.noClose) { var x = e('button', 'modal-x'); x.type = 'button'; x.textContent = '\u00d7';x.setAttribute('aria-label','Cerrar'); head.appendChild(x); }
     var content = e('div', 'modal-body');
     panel.appendChild(head); panel.appendChild(content);
     overlay.appendChild(panel);
@@ -269,10 +271,10 @@
     function rect(x, y, w, h, r) { var el = document.createElementNS(NS, 'rect'); el.setAttribute('x', x); el.setAttribute('y', y); el.setAttribute('width', w); el.setAttribute('height', h); el.setAttribute('rx', r); svg.appendChild(el); }
     function line(x1, y1, x2, y2) { var el = document.createElementNS(NS, 'line'); el.setAttribute('x1', x1); el.setAttribute('y1', y1); el.setAttribute('x2', x2); el.setAttribute('y2', y2); svg.appendChild(el); }
     function circle(cx, cy, r) { var el = document.createElementNS(NS, 'circle'); el.setAttribute('cx', cx); el.setAttribute('cy', cy); el.setAttribute('r', r); svg.appendChild(el); }
-    if (type === 0) { for (var x = 3; x < 20; x += 11) for (var y = 3; y < 20; y += 11) rect(x, y, 7, 7, 2); }
+    if (type === 0) { line(2,11,12,3);line(12,3,22,11);line(5,9,5,21);line(19,9,19,21);line(5,21,19,21);rect(10,14,4,7,0); }
     else if (type === 1) { rect(5, 4, 14, 17, 2); rect(9, 2, 6, 4, 1); line(9, 11, 15, 11); line(9, 16, 15, 16); }
     else if (type === 2) { rect(2, 8, 13, 10, 2); line(15, 11, 20, 11); line(20, 11, 22, 16); line(22, 16, 22, 18); line(15, 18, 22, 18); circle(7, 19, 2); circle(19, 19, 2); }
-    else { rect(5, 2, 14, 20, 2); line(9, 8, 15, 8); line(9, 12, 15, 12); line(9, 16, 13, 16); }
+    else { rect(3,13,3,8,1);rect(10,8,3,13,1);rect(17,3,3,18,1); }
     return svg;
   }
   function expandable(parent, title, open) {
@@ -318,32 +320,45 @@
     });
   }
 
+  function captured(o) { return o.kpi === false ? !!o.actualizado : LG.kpi.calc(o).completo; }
+  function shortDate(date) { return new Date(date + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function heading(parent, title, subtitle) { var h=e('div','page-heading');t(h,title,26,INK,true);if(subtitle)t(h,subtitle,14,MUTED,false);parent.appendChild(h);return h; }
+  function machine(o) {
+    var wrap=e('div','machine-art');var family=opt(o.familia);var svg='';
+    var wheels='<g fill="#25342f" stroke="#15221d" stroke-width="2"><circle cx="42" cy="82" r="15"/><circle cx="116" cy="82" r="15"/></g><g fill="#69746d"><circle cx="42" cy="82" r="7"/><circle cx="116" cy="82" r="7"/></g>';
+    if(family.indexOf('BARREN')>=0) svg='<path d="M27 68h85v14H27z" fill="#d49b27"/><path d="M37 46h37v29H37z" fill="#edbd48"/><path d="M43 49h22v16H43z" fill="#34483f"/><path d="M72 51L116 19l28 3M80 57l40-32" fill="none" stroke="#d7a334" stroke-width="8"/><path d="M108 19l36-10M122 22l29-8" stroke="#3c4942" stroke-width="5"/><path d="M144 12l5 43" stroke="#526157" stroke-width="3"/>'+wheels;
+    else if(family.indexOf('CARGADORES')>=0) svg='<path d="M22 60h69v18H22zM35 37h35l9 36H35z" fill="#edb73e"/><path d="M42 42h20l7 20H42z" fill="#34483f"/><path d="M81 69l29-17 22 18" fill="none" stroke="#d99e2d" stroke-width="9"/><path d="M120 64l28 14 10 15h-42z" fill="#d1a03c" stroke="#947324" stroke-width="2"/>'+wheels;
+    else svg='<path d="M17 35h105l-15 30H42z" fill="#edb73e"/><path d="M100 45h34l19 31h-53z" fill="#dbab39"/><path d="M112 49h17l9 15h-26z" fill="#34483f"/><path d="M28 69h115v9H28z" fill="#b68b2b"/>'+wheels;
+    wrap.innerHTML='<svg viewBox="0 0 170 110" aria-hidden="true"><ellipse cx="85" cy="98" rx="65" ry="5" fill="#d9ded6"/>'+svg+'</svg>';return wrap;
+  }
+
   /* ======================= shell ======================= */
   function show(tab) {
     saveMeta();
     app.screen = tab;
     var root = document.getElementById('app');
     root.innerHTML = '';
-    var over = ['LA GUITARRA', 'REGISTRO DEL TURNO', 'CONTROL DE FLOTA', 'ENTREGA DEL TURNO'];
-    var titles = ['Dashboard KPI', 'Captura r\u00e1pida', 'Equipos', 'Reportes'];
     var header = e('header', 'hd');
-    t(header, over[tab], 12, '#BBD2C4', true);
-    t(header, titles[tab], 24, '#FFFFFF', true);
-    var u = t(header, profileLabel(), 12, '#BBD2C4', false); u.classList.add('link');
-    u.onclick = function () { profiles(); };
+    var brand=e('button','brand');brand.type='button';brand.innerHTML='<svg viewBox="0 0 44 32" aria-hidden="true"><path d="M1 29L17 8l6 8 6-14 14 27z" fill="currentColor"/><path d="M12 19l5-7 6 8 6-13 6 12-6-6-5 12-7-8z" fill="white"/></svg><span>La Guitarra</span>';
+    brand.onclick=function(){show(0);};header.appendChild(brand);
+    var context=e('div','header-context');t(context,shortDate(meta().fecha),12,MUTED,false);
+    var u=e('button','profile-link');u.type='button';u.textContent=app.user || 'Perfiles';u.title=profileLabel();u.onclick=function(){profiles();};context.appendChild(u);header.appendChild(context);
     root.appendChild(header);
     var main = e('main', 'body'); root.appendChild(main);
-    dom.body = main;
+    dom.body = main; main.dataset.screen=String(tab);
+    if(tab===1) heading(main,'Captura del turno','Registra las horas y condiciones de cada equipo');
+    if(tab===2) heading(main,'Nuestros equipos','Catálogo y estado de la flota');
+    if(tab===3) heading(main,'Reportes del turno','Tu operación, en un solo lugar');
     if (tab === 0) dashboard();
     else if (tab === 1) { turnCard(); equipment(); }
     else if (tab === 2) equipment();
     else reports();
     var nav = e('nav', 'tabs');
-    var names = ['Dashboard', 'Captura', 'Equipos', 'Reportes'];
+    var names = ['Inicio', 'Captura', 'Equipos', 'Reportes'];
     for (var i = 0; i < 4; i++) {
       (function (n) {
         var b = e('button', 'tab' + (tab === n ? ' active' : '')); b.type = 'button';
-        b.style.color = tab === n ? GREEN : MUTED;
+        b.style.color = tab === n ? GREEN : MUTED; b.setAttribute('aria-current',tab===n?'page':'false');
         b.appendChild(navIcon(n));
         var l = t(b, names[n], 11, tab === n ? GREEN : MUTED, true); l.classList.add('tab-label');
         b.onclick = function () { show(n); };
@@ -351,40 +366,32 @@
       })(i);
     }
     root.appendChild(nav);
+    window.scrollTo(0,0);
   }
 
   /* ======================= Dashboard ======================= */
   function dashboard() {
     var t0 = totals(), counts = fleetCounts();
     var available = U.ratio(t0[0] - t0[2] - t0[3], t0[0]), util = U.ratio(t0[1], t0[0]);
-    var r1 = row(dom.body, 'metric-row');
-    metricInto(r1, 'Disponibilidad', U.pct(available), 'Tiempo disponible', CHART[0], available);
-    metricInto(r1, 'Utilizaci\u00f3n', U.pct(util), 'Trabajo real', '#347BDD', util);
-    var r2 = row(dom.body, 'metric-row');
-    metricInto(r2, 'Capturados', (t0[5] | 0) + '/' + (t0[6] | 0), (t0[7] | 0) + ' pendientes', CHART[3], U.ratio(t0[5], t0[6]));
-    metricInto(r2, 'Di\u00e9sel', U.num(LG.diesel.gallons(meta().diesel)) + ' gal', 'Carga del turno', CHART[1], NaN);
-    var r3 = row(dom.body, 'metric-row');
-    metricInto(r3, 'Disponibles', String(counts[0]), 'Estado actual', CHART[0], U.ratio(counts[0], app.records.length));
-    metricInto(r3, 'Fuera de servicio', String(counts[2]), 'No disponibles', CHART[2], U.ratio(counts[2], app.records.length));
-
-    var fleet = card(dom.body);
-    t(fleet, 'Estado de flota', 19, INK, true);
-    t(fleet, app.records.length + ' equipos \u00b7 ' + meta().fecha + ' \u00b7 ' + (meta().turno || 'D\u00eda'), 12, MUTED, false);
-    fleet.appendChild(barChart(counts));
-    stateLegend(fleet, counts);
-
-    var actions = card(dom.body);
-    t(actions, 'Operaci\u00f3n', 18, INK, true);
-    btn(actions, 'Capturar equipos', true, function () { show(1); });
-    btn(actions, 'Pendientes por equipo', false, function () { pending(); });
-    btn(actions, 'Comparativo diario / semanal / mensual', false, function () { comparison(); });
-    btn(actions, '\u00d3rdenes y calendario preventivo', false, function () { workOrders(); });
-    t(dom.body, 'Los KPI incluyen capturas completas. \u2014 indica informaci\u00f3n pendiente. El estado del equipo se registra por separado.', 12, MUTED, false);
+    var top=row(dom.body,'summary-heading');heading(top,'Resumen del turno');var shift=t(top,(/noche/i.test(meta().turno)?'☾  ':'☀  ')+meta().turno,12,GREEN,true);shift.className+=' shift-chip';
+    var grid=e('div','dashboard-grid');dom.body.appendChild(grid);
+    var hero=card(grid);hero.classList.add('availability-hero');t(hero,'Disponibilidad',18,'#FFFFFF',true);t(hero,U.pct(available),54,'#FFFFFF',true).classList.add('hero-value');
+    var heroFoot=row(hero);t(hero,'Disponibilidad mecánica del turno',12,'#d9ebe4',false);t(hero,t0[5]+' capturas KPI completas',12,'#d9ebe4',false);
+    var metrics=row(grid,'metric-row dashboard-metrics');metricInto(metrics,'Utilización',U.pct(util),'Trabajo / horas del periodo',GREEN,util);metricInto(metrics,'Capturados',t0[5]+'/'+t0[6],t0[7]+' pendientes',GREEN,U.ratio(t0[5],t0[6]));
+    var fleet=card(grid);fleet.classList.add('fleet-panel');t(fleet,'Estado de la flota · '+app.records.length+' equipos',17,INK,true);fleet.appendChild(barChart(counts));stateLegend(fleet,counts);
+    var families=card(grid);families.classList.add('family-panel');t(families,'Horas por familia',17,INK,true);t(families,'Trabajo registrado · '+meta().turno,12,MUTED,false);
+    var sums={};app.records.forEach(function(o){var k=LG.kpi.calc(o);var f=opt(o.familia)||'OTROS';if(!Object.prototype.hasOwnProperty.call(sums,f))sums[f]=0;if(o.kpi!==false&&k.completo)sums[f]+=k.trabajo;});var max=Math.max.apply(null,Object.keys(sums).map(function(k){return sums[k];}).concat([1]));
+    Object.keys(sums).forEach(function(f){var line=e('div','family-hours');t(line,f.toLocaleLowerCase('es-MX'),11,MUTED,false);var bar=e('div','bar');var fill=e('div','bar-fill');fill.style.width=(sums[f]/max*100)+'%';bar.appendChild(fill);line.appendChild(bar);t(line,U.num(sums[f])+' h',12,INK,true);families.appendChild(line);});
+    var cta=btn(grid,'Continuar captura · '+t0[7]+' pendientes  →',true,function(){show(1);},'capture-cta');cta.prepend(navIcon(1));
+    var fuel=card(grid);fuel.classList.add('fuel-panel');t(fuel,'Diésel del turno',14,MUTED,false);t(fuel,U.num(LG.diesel.gallons(meta().diesel))+' gal',25,INK,true);t(fuel,'Carga registrada',12,MUTED,false);
+    var actions=expandable(dom.body,'Más acciones del turno',false);btn(actions,'Pendientes por equipo',false,function(){pending();});btn(actions,'Comparativo diario / semanal / mensual',false,function(){comparison();});btn(actions,'Órdenes y calendario preventivo',false,function(){workOrders();});
+    var saved=e('div','saved-note');saved.appendChild(navIcon(1));t(saved,'Guardado en este dispositivo · Disponible sin conexión',12,GREEN,false);dom.body.appendChild(saved);
   }
 
   /* ======================= Captura ======================= */
   function turnCard() {
-    var c = card(dom.body);
+    var details=e('details','turn-details');var summary=e('summary');summary.textContent=shortDate(meta().fecha)+' · '+meta().turno+' · Datos del turno';details.appendChild(summary);dom.body.appendChild(details);
+    var c = card(details);
     t(c, 'Datos del turno', 18, INK, true);
     var date = dateField(c, 'Fecha', meta().fecha);
     var shift = field(c, 'Turno', meta().turno || 'D\u00eda', false);
@@ -467,6 +474,8 @@
       var o = app.records[i] || {};
       var hay = (opt(o.equipo) + ' ' + opt(o.eco) + ' ' + opt(o.marca) + ' ' + opt(o.departamento)).toLowerCase();
       if (query !== '' && hay.indexOf(query) < 0) continue;
+      if(eq.capture==='pending' && captured(o))continue;
+      if(eq.capture==='done' && !captured(o))continue;
       if (eq.family.selectedIndex > 0 && opt(o.familia) !== eq.family.value) continue;
       if (eq.state.selectedIndex > 0 && opt(o.estado) !== eq.state.value) continue;
       if (eq.kpi.selectedIndex === 1 && o.kpi === false) continue;
@@ -480,17 +489,11 @@
   }
 
   function renderItem(parent, index, o) {
-    var item = card(parent);
-    t(item, opt(o.familia), 11, MUTED, true);
-    t(item, opt(o.equipo) + (opt(o.eco) === '' ? '' : ' #' + opt(o.eco)), 18, INK, true);
-    t(item, opt(o.marca) + (opt(o.departamento) === '' ? '' : ' \u00b7 ' + opt(o.departamento)), 12, MUTED, false);
-    var status = opt(o.estado) || 'POR CAPTURAR';
-    var badge = t(item, '\u25cf  ' + status, 12, statusColor(status), true); badge.classList.add('badge');
-    var k = LG.kpi.calc(o);
-    t(item, o.kpi !== false
-      ? (k.completo ? 'D ' + U.pct(k.disponibilidad) + '   U ' + U.pct(k.utilizacion) + '   Trabajo ' + U.num(k.trabajo) + ' h' : 'Captura KPI pendiente')
-      : 'Solo estado \u00b7 sin KPI', 12, MUTED, false);
-    btn(item, app.screen === 1 ? 'Capturar' : 'Editar / capturar', true, function () { edit(index); });
+    var item=card(parent);item.classList.add('equipment-card');item.appendChild(machine(o));
+    var info=e('div','equipment-info');item.appendChild(info);t(info,opt(o.equipo)+(opt(o.eco)===''?'':' #'+opt(o.eco)),16,INK,true);t(info,opt(o.marca)+' · '+opt(o.familia).toLocaleLowerCase('es-MX'),11,MUTED,false);
+    var done=captured(o),status=opt(o.estado)||'POR CAPTURAR';var badge=t(info,app.screen===1?(done?'✓  Capturado':'◷  Pendiente'):status.replace(/_/g,' '),11,done?GREEN:statusColor(status),true);badge.classList.add('status-pill',app.screen===1?(done?'is-done':'is-pending'):(status==='DISPONIBLE'?'is-done':'is-pending'));
+    var k=LG.kpi.calc(o);if(k.completo&&o.kpi!==false)t(info,U.num(k.trabajo)+' h trabajadas',11,MUTED,false);
+    var open=btn(item,app.screen===1?'Capturar':'Ver equipo',false,function(){edit(index);},'equipment-open');open.setAttribute('aria-label',(app.screen===1?'Capturar ':'Ver ')+opt(o.equipo)+' #'+opt(o.eco));var arrow=e('span');arrow.textContent='›';open.prepend(arrow);
     if (app.screen === 2 && canAdmin()) {
       var actions = row(item);
       btn(actions, 'Orden de trabajo', false, function () { order(index); });
@@ -505,19 +508,23 @@
   }
 
   function equipment() {
-    var control = card(dom.body);
+    var all=app.records.length,complete=app.records.filter(captured).length;
+    if(app.screen===1){var progress=e('div','capture-progress');t(progress,complete+' de '+all+' equipos registrados',14,MUTED,false);var line=row(progress);var bar=e('div','bar');var fill=e('div','bar-fill');fill.style.width=(all?complete/all*100:0)+'%';bar.appendChild(fill);line.appendChild(bar);t(line,(all?Math.round(complete/all*100):0)+'%',13,INK,true);dom.body.appendChild(progress);}
+    var control = card(dom.body);control.classList.add('equipment-controls');
     var search = field(control, 'Buscar equipo, econ\u00f3mico o departamento', '', false);
 
+    search.placeholder='Buscar equipo o económico';search.setAttribute('aria-label','Buscar equipo o económico');
+    var filters=e('details','advanced-filters');var filtersTitle=e('summary');filtersTitle.textContent='Familia y filtros';filters.appendChild(filtersTitle);control.appendChild(filters);
     var families = ['Todas las familias'];
     for (var i = 0; i < app.records.length; i++) {
       var f = opt(app.records[i].familia);
       if (families.indexOf(f) < 0) families.push(f);
     }
-    var family = spinner(control, 'Familia', families, families[0]);
+    var family = spinner(filters, 'Familia', families, families[0]);
     family.onchange = refreshList;
 
-    var extra = e('div'); extra.style.display = 'none'; control.appendChild(extra);
-    var toggle = t(control, 'Filtros: estado, KPI y departamento', 12, GREEN, true); toggle.classList.add('link');
+    var extra = e('div'); extra.style.display = 'none'; filters.appendChild(extra);
+    var toggle = t(filters, 'Filtros: estado, KPI y departamento', 12, GREEN, true); toggle.classList.add('link');
     var caret = e('span', 'caret'); caret.textContent = '\u25b8'; toggle.appendChild(caret);
     toggle.onclick = function () {
       extra.style.display = extra.style.display === 'none' ? 'block' : 'none';
@@ -537,6 +544,8 @@
     var summary = t(control, '', 12, MUTED, false);
 
     eq = { search: search, family: family, state: state, kpi: kpi, dept: dept, summary: summary, list: e('div', 'list') };
+    eq.capture='all';
+    if(app.screen===1){var chips=e('div','capture-filters');[['Pendientes','pending',all-complete],['Capturados','done',complete],['Todos','all',all]].forEach(function(v){var b=btn(chips,v[0]+'  '+v[2],false,function(){eq.capture=v[1];Array.from(chips.children).forEach(function(el){el.classList.remove('selected');el.setAttribute('aria-pressed','false');});b.classList.add('selected');b.setAttribute('aria-pressed','true');refreshList();});b.setAttribute('aria-pressed',v[1]==='all'?'true':'false');if(v[1]==='all')b.classList.add('selected');});dom.body.appendChild(chips);}
     dom.body.appendChild(eq.list);
     search.oninput = refreshList;
     refreshList();
@@ -555,6 +564,7 @@
 
     source.equipo = S.equipmentName(source.equipo);
     var m = openModal(index < 0 ? 'Agregar equipo' : 'Capturar equipo', { full: true });
+    m.panel.classList.add('equipment-editor');
     var form = m.content;
     var fields = {};
     var keys = [];
@@ -580,19 +590,24 @@
     var include = e('input'); include.type = 'checkbox'; include.checked = source.kpi !== false; include.disabled = !admin;
     includeWrap.appendChild(include);
     includeWrap.appendChild(document.createTextNode(' Incluir en indicadores horarios (KPI)'));
-    form.appendChild(includeWrap);
+    identification.appendChild(includeWrap);
 
-    var hours = card(form);
-    t(hours, 'Hor\u00f3metros y mantenimiento', 18, INK, true);
+    var editorTabs=e('nav','editor-tabs');editorTabs.setAttribute('aria-label','Secciones de captura');form.appendChild(editorTabs);
+    var hours = card(form);hours.classList.add('hours-section');
+    t(hours, 'Horómetro eléctrico · KPI', 18, INK, true);
     var meterRow = row(hours);
     addField('inicio', pairField(meterRow, 'Hor\u00f3metro inicial (h)', source.inicio));
     addField('final', pairField(meterRow, 'Hor\u00f3metro final (h)', source.final));
     addField('programadas', field(hours, 'Horas del periodo', index < 0 && opt(source.programadas) === '' ? '12' : source.programadas, true));
+    var maintenanceTitle=t(hours,'Mantenimiento del turno',16,INK,true);maintenanceTitle.classList.add('maintenance-anchor');
     var mcRow = row(hours);
     addField('mp', pairField(mcRow, 'Mantenimiento preventivo MP (h)', source.mp));
     addField('mc', pairField(mcRow, 'Mantenimiento correctivo MC (h)', source.mc));
-    var live = t(hours, '', 12, GREEN, true);
+    var live = t(hours, '', 12, GREEN, true);live.classList.add('live-hours');live.setAttribute('aria-live','polite');
+    var workBanner=e('div','work-banner');hours.insertBefore(workBanner,maintenanceTitle);t(workBanner,'Horas trabajadas',14,GREEN,true);var workValue=t(workBanner,'— h',26,GREEN,true);
 
+    var periodLabel=hours.querySelector('label[for="'+fields.programadas.id+'"]');
+    hours.insertBefore(periodLabel,live);hours.insertBefore(fields.programadas,live);
     var numbers = ['inicio', 'final', 'programadas', 'mp', 'mc'];
     function update() {
       var o = {};
@@ -605,11 +620,13 @@
       if (U.finite(k.inicial) && U.finite(k.fin) && k.fin < k.inicial) warning = 'El hor\u00f3metro final es menor al inicial';
       else if (U.finite(k.periodo) && k.periodo <= 0) warning = 'El periodo debe ser mayor que cero';
       live.textContent = warning === '' ? txt : txt + '\n' + warning;
+      workValue.textContent=U.num(k.trabajo)+' h';workBanner.classList.toggle('invalid',warning!=='');
       live.style.color = warning === '' ? GREEN : CHART[2];
     }
 
     var supplies = expandable(form, 'Percusi\u00f3n y suministros', false);
     var observations = card(form);
+    [['Horómetros',hours],['Mantto.',maintenanceTitle],['Suministros',supplies]].forEach(function(v,i){var b=btn(editorTabs,v[0],false,function(){Array.from(editorTabs.children).forEach(function(el){el.classList.remove('selected');});b.classList.add('selected');if(v[1]===supplies)supplies.querySelector('.expand').style.display='block';v[1].scrollIntoView({behavior:'smooth',block:'start'});});if(i===0)b.classList.add('selected');});
     t(observations, 'Personal y observaciones', 18, INK, true);
     [['percInicio', 'Percusi\u00f3n inicial', supplies], ['percFinal', 'Percusi\u00f3n final', supplies],
     ['hidraulico', 'Aceite hidr\u00e1ulico (cantidad y unidad)', supplies], ['motor', 'Aceite motor (cantidad y unidad)', supplies],
@@ -621,6 +638,7 @@
       if (index < 0) { toast('Guarda el equipo antes de adjuntar fotos'); return; }
       m.close(); photos(index);
     });
+    form.appendChild(identification.parentNode);
     t(form, 'Puedes guardar una captura pendiente y completarla despu\u00e9s.', 12, MUTED, false);
 
     function saveDraft() {
@@ -633,7 +651,7 @@
       } catch (er) { }
     }
     for (var fk = 0; fk < keys.length; fk++) {
-      fields[keys[fk]].oninput = saveDraft;
+      fields[keys[fk]].oninput = function(){saveDraft();update();};
     }
     status.onchange = saveDraft;
     include.onchange = function () { hours.style.display = include.checked ? 'block' : 'none'; saveDraft(); };
@@ -641,7 +659,7 @@
     update();
 
     var saveBar = e('div', 'modal-actions'); form.appendChild(saveBar);
-    btn(saveBar, 'Cancelar', false, function () { m.close(); });
+    btn(saveBar, 'Guardar borrador', false, function () { saveDraft();m.close();toast('Borrador guardado en este dispositivo'); });
     btn(saveBar, 'Guardar', true, function () {
       var item = JSON.parse(JSON.stringify(source));
       for (var k2 = 0; k2 < keys.length; k2++) item[keys[k2]] = opt(fields[keys[k2]].value).trim();
