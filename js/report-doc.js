@@ -7,15 +7,15 @@
   var B = LG.bytes;
 
   var C = {
-    navy: '#10273A', blue: '#1D4259', green: '#0F6F52', gold: '#BD923E', red: '#BA3A3E',
-    ink: '#1D313B', muted: '#667780', pale: '#F1F6F8', white: '#FFFFFF',
+    navy: '#032B4B', blue: '#1D4259', green: '#0F6F52', gold: '#BD923E', red: '#BA3A3E',
+    ink: '#1D313B', muted: '#667780', pale: '#E5F3FC', white: '#FFFFFF',
     subtitle: '#D7E2E9', gold2: '#ECBF5B', rowFamily: '#DDEAF1', rowLine: '#E0E9ED',
     sep: '#D3DEE3', badgeOk: '#E1F2EA', badgeWait: '#FAF4E2', badgeBad: '#FBE5EA', wait2: '#FAF4E2',
     gray4: '#7799AC'
   };
-  var COLUMNS = [340, 110, 100, 90, 90, 100, 100, 160, 210, 110, 230, 664];
+  var COLUMNS = [280, 130, 110, 130, 140, 130, 140, 130, 140, 180, 130, 120, 190, 354];
   var HEADINGS = ['EQUIPO / IDENTIFICACIÓN', 'HORÓMETROS', 'PERCUSIÓN', 'PERIODO / TRABAJO',
-    'MP / MC', 'ESPERA / DISP.', 'DISP. / UTIL.', 'ESTADO ACTUAL', 'ACEITES / INSUMOS',
+    'H. TRABAJADAS (h)', 'MP / MC (h)', 'H. MANT. TOTAL (h)', 'ESPERA / DISP.', 'DISP. / UTIL.', 'ESTADO ACTUAL', 'ACEITES / INSUMOS',
     'DIÉSEL EQUIPO', 'UBICACIÓN / PERSONAL', 'OBSERVACIONES'];
 
   var mCanvas = null, mCtx = null;
@@ -180,7 +180,9 @@
           (has || this.raw(item, 'inicio') !== '' || this.raw(item, 'final') !== '') ? 'I: ' + this.s(item, 'inicio') + '\nF: ' + this.s(item, 'final') : '\u2014',
           this.join(item, [['percInicio', 'I: '], ['percFinal', 'F: ']]),
           (has || this.raw(item, 'programadas') !== '' || U.finite(k.trabajo)) ? 'P: ' + this.s(item, 'programadas') + '\nT: ' + this.n(k.trabajo) : '\u2014',
+          this.n(k.trabajo),
           (has || this.raw(item, 'mp') !== '' || this.raw(item, 'mc') !== '') ? 'MP: ' + this.s(item, 'mp') + '\nMC: ' + this.s(item, 'mc') : '\u2014',
+          this.n(U.finite(k.mp) && U.finite(k.mc) && k.mp >= 0 && k.mc >= 0 ? k.mp + k.mc : NaN),
           has ? 'E: ' + this.n(k.espera) + '\nD: ' + this.n(k.disponible) : '\u2014',
           has ? 'D: ' + this.pct(k.disponibilidad) + '\nU: ' + this.pct(k.utilizacion) : 'Sin KPI',
           this.s(item, 'estado'),
@@ -200,38 +202,37 @@
         height += rh;
       }
     }
-    var h = Math.max(1697, height + 165);
+    var h = Math.max(1400, height + 165);
     this._rows = rows;
     this._pages = [
       { number: 1, width: 2400, height: h, pdfWidth: 1684, pdfHeight: Math.ceil(h * 1684 / 2400) },
-      { number: 2, width: 1600, height: 1131, pdfWidth: 842, pdfHeight: 595 }
+      { number: 2, width: 1600, height: 620, pdfWidth: 842, pdfHeight: 327 }
     ];
     return this._pages;
   };
 
-  Report.prototype.header = function (ctx, page, title, subtitle) {
-    var w = page.width;
-    box(ctx, 0, 0, w, 150, C.navy, 0);
-    box(ctx, w - 430, 0, 430, 150, C.blue, 0);
-    box(ctx, 44, 24, 164, 98, C.white, 14);
-    if (this.logo) { try { ctx.drawImage(this.logo, 0, 0, 77, 43, 54, 43, 144, 68); } catch (e) { } }
-    txt(ctx, 'LA GUITARRA', 236, 55, 31, C.white, true);
-    txt(ctx, title, 236, 94, 29, C.white, true);
-    txt(ctx, subtitle, 236, 126, 16, C.subtitle, false);
-    txt(ctx, 'CONTROL DE FLOTA', w - 386, 47, 20, C.gold2, true);
-    txt(ctx, this.date, w - 386, 82, 25, C.white, true);
-    this.lines(ctx, 'Turno: ' + this.shift, w - 386, 113, 16, 340, C.white, false);
+  Report.prototype.header = function(ctx,page,title,subtitle){
+box(ctx,14,8,page.width-28,100,C.navy,0);
+if(this.logo)ctx.drawImage(this.logo,0,0,77,43,36,26,98,55);
+txt(ctx,"SIERRA MADRE",150,50,22,C.white,true);
+txt(ctx,"M I N E R A L S",152,78,14,C.gold,true);
+txt(ctx,"LA GUITARRA",page.width*0.29,45,27,C.white,true);
+txt(ctx,"REPORTE DE MANTENIMIENTO DE EQUIPOS",page.width*0.29,72,16,C.white,false);
+txt(ctx,this.date,page.width-315,40,18,C.white,true);
+txt(ctx,"Turno: "+this.shift,page.width-315,64,14,C.white,false);
+this.lines(ctx,"Supervisor: "+this.supervisor,page.width-315,87,12,295,C.white,false);
+
   };
 
   Report.prototype.footer = function (ctx, page) {
-    var y = page.height - 41;
+    var y = page.height - (page.number === 2 ? 17 : 41);
     box(ctx, 40, y - 20, page.width - 80, 1, C.sep, 0);
-    txt(ctx, 'LA GUITARRA COMPAÑÍA MINERA S.A. DE C.V.  \u00b7  Mantenimiento mecánico', 48, y + 7, 13, C.muted, false);
+    txt(ctx, 'LA GUITARRA · Mantenimiento mecánico', 48, y + 7, 13, C.muted, false);
     txt(ctx, page.number + ' / 2', page.width - 107, y + 7, 15, C.navy, true);
   };
 
   Report.prototype.drawFleet = function (ctx, page) {
-    this.header(ctx, page, 'DISPONIBILIDAD DE EQUIPOS', 'Registro completo del turno \u00b7 Supervisor: ' + this.supervisor);
+    this.header(ctx, page, 'REPORTE DE MANTENIMIENTO DE EQUIPOS', 'Registro completo del turno \u00b7 Supervisor: ' + this.supervisor);
     var counts = this.states();
     var labels = ['DISPONIBLES', 'NO DISPONIBLES / MANTENIMIENTO', 'POR CAPTURAR', 'TOTAL DE EQUIPOS'];
     var colors = [C.green, C.red, C.gold, C.blue];
@@ -246,9 +247,10 @@
     var x = 48, y = 244;
     box(ctx, x, y, 2304, 34, C.navy, 7);
     for (var col = 0; col < COLUMNS.length; col++) {
+      if (col === 4 || col === 6) box(ctx, x, y, COLUMNS[col], 34, "#F4C64E", 0);
       var h = this.wrap(HEADINGS[col], 11, COLUMNS[col] - 14, true);
       var baseline = y + (h.length > 1 ? 13 : 22);
-      for (var hi = 0; hi < h.length; hi++) { txt(ctx, h[hi], x + 8, baseline, 11, C.white, true); baseline += 12; }
+      for (var hi = 0; hi < h.length; hi++) { txt(ctx, h[hi], x + 8, baseline, 11, (col === 4 || col === 6) ? C.navy : C.white, true); baseline += 12; }
       x += COLUMNS[col];
     }
     y = 278;
@@ -264,7 +266,8 @@
         box(ctx, x, y, 2304, row.height, (row.index % 2 === 0) ? C.pale : C.white, 0);
         for (var c2 = 0; c2 < COLUMNS.length; c2++) {
           var color = C.ink;
-          if (c2 === 7) {
+          if (c2 === 4 || c2 === 6) box(ctx, x, y, COLUMNS[c2], row.height, "#FFF1C5", 0);
+          if (c2 === 9) {
             var state = this.raw(row.item, 'estado');
             color = state === 'DISPONIBLE' ? C.green : state === 'POR CAPTURAR' ? C.gold : C.red;
             box(ctx, x + 5, y + 5, COLUMNS[c2] - 10, row.height - 10,
@@ -273,7 +276,7 @@
           var line = 0;
           var cellLines = row.cells[c2];
           for (var li = 0; li < cellLines.length; li++) {
-            txt(ctx, cellLines[li], x + 8, y + 18 + line * 17, 13, color, c2 === 0 || c2 === 7);
+            txt(ctx, cellLines[li], x + 8, y + 18 + line * 17, 13, color, c2 === 0 || c2 === 9);
             line++;
           }
           x += COLUMNS[c2];
@@ -284,7 +287,7 @@
     }
     y += 23;
     this.lines(ctx, 'LECTURA DEL REGISTRO  \u00b7  I / F: inicial / final. P / T: periodo / trabajo. MP / MC: preventivo / correctivo. E / D: espera / horas disponibles. D / U: disponibilidad mecánica / utilización efectiva. H / M / T: aceite hidráulico / motor / transmisión.', 48, y, 14, 2304, C.muted, false);
-    this.lines(ctx, 'Las horas trabajadas se calculan con los horómetros. El estado actual se captura por separado. \u2014 indica dato pendiente; Sin KPI identifica registros sin indicadores horarios. Las cantidades de insumos conservan la unidad capturada.', 48, y + 44, 14, 2304, C.muted, false);
+    this.lines(ctx, 'Horas trabajadas = horómetro final - inicial. Mantenimiento total = MP + MC (sin espera). El estado actual se captura por separado. \u2014 indica dato pendiente; Sin KPI identifica registros sin indicadores horarios. Las cantidades de insumos conservan la unidad capturada.', 48, y + 44, 14, 2304, C.muted, false);
     this.footer(ctx, page);
   };
 
@@ -296,107 +299,85 @@
     txt(ctx, note, x + 18, y + 103, 13, C.muted, false);
   };
 
-  Report.prototype.drawDashboard = function (ctx, page) {
-    this.header(ctx, page, 'INDICADORES GENERALES DEL TURNO', 'Disponibilidad, utilización y control de diésel \u00b7 Supervisor: ' + this.supervisor);
-    box(ctx, 0, 150, 1600, 941, C.pale, 0);
-    var t = this.totals(null), fuel = this.fuel();
-    var avail = t[0] - t[2] - t[3];
-    var captured = t[5] | 0, pending = t[7] | 0;
+  Report.prototype.drawDashboard = function(ctx,page){
+var t=this.totals(null), f=this.fuel(), st=this.states(), avail=t[0]-t[2]-t[3];
+this.header(ctx,page,'REPORTE DE MANTENIMIENTO DE EQUIPOS','Supervisor: '+this.supervisor);
+txt(ctx,"INDICADORES GENERALES DEL TURNO",26,137,23,C.navy,true);
+txt(ctx,(t[5]|0)+" / "+(t[6]|0)+" capturas KPI completas",650,137,14,C.navy,false);
+box(ctx,26,150,378,70,C.pale,4);
+txt(ctx,"Disponibilidad mecánica",42,173,16,C.navy,false);
+txt(ctx,this.pct(U.ratio(avail,t[0])),42,207,31,C.navy,true);
+box(ctx,416,150,378,70,C.pale,4);
+txt(ctx,"Utilización efectiva",432,173,16,C.navy,false);
+txt(ctx,this.pct(U.ratio(t[1],t[0])),432,207,31,C.navy,true);
+box(ctx,806,150,378,70,C.pale,4);
+txt(ctx,"Uso de disponibilidad",822,173,16,C.navy,false);
+txt(ctx,this.pct(U.ratio(t[1],avail)),822,207,31,C.navy,true);
+box(ctx,1196,150,378,70,C.pale,4);
+txt(ctx,"Confiabilidad del formato",1212,173,16,C.navy,false);
+txt(ctx,this.pct(U.ratio(t[0]-t[3],t[0])),1212,207,31,C.navy,true);
+box(ctx,26,230,575,200,C.pale,4);
+txt(ctx,"Distribución de horas",40,255,18,C.navy,true);
+txt(ctx,"Concepto",40,279,13,C.blue,true);
+txt(ctx,"Horas",310,279,13,C.blue,true);
+txt(ctx,"% del turno",400,279,13,C.blue,true);
+txt(ctx,"Trabajo",40,307,14,C.navy,false);
+txt(ctx,t[5]>0?this.n(t[1])+" h":"—",310,307,14,C.navy,true);
+txt(ctx,this.pct(U.ratio(t[1],t[0])),400,307,14,C.navy,false);
+box(ctx,480,295,105,13,C.white,4);
+box(ctx,480,295,t[0]>0?(105*t[1]/t[0]):0,13,C.blue,4);
+txt(ctx,"MP (Mantenimiento programado)",40,338,14,C.navy,false);
+txt(ctx,t[5]>0?this.n(t[2])+" h":"—",310,338,14,C.navy,true);
+txt(ctx,this.pct(U.ratio(t[2],t[0])),400,338,14,C.navy,false);
+box(ctx,480,326,105,13,C.white,4);
+box(ctx,480,326,t[0]>0?(105*t[2]/t[0]):0,13,C.gold,4);
+txt(ctx,"MC (Mantenimiento correctivo)",40,369,14,C.navy,false);
+txt(ctx,t[5]>0?this.n(t[3])+" h":"—",310,369,14,C.navy,true);
+txt(ctx,this.pct(U.ratio(t[3],t[0])),400,369,14,C.navy,false);
+box(ctx,480,357,105,13,C.white,4);
+box(ctx,480,357,t[0]>0?(105*t[3]/t[0]):0,13,C.gold,4);
+txt(ctx,"Espera",40,400,14,C.navy,false);
+txt(ctx,t[5]>0?this.n(t[4])+" h":"—",310,400,14,C.navy,true);
+txt(ctx,this.pct(U.ratio(t[4],t[0])),400,400,14,C.navy,false);
+box(ctx,480,388,105,13,C.white,4);
+box(ctx,480,388,t[0]>0?(105*t[4]/t[0]):0,13,C.muted,4);
+box(ctx,614,230,350,200,C.pale,4);
+txt(ctx,"Control de diésel",628,255,18,C.navy,true);
+var loaded=LG.diesel.gallons(this.diesel);
+txt(ctx,"Total cargado",628,291,13,C.navy,false);
+txt(ctx,U.finite(loaded)?this.n(loaded)+" gal":"—",845,291,14,C.navy,true);
+txt(ctx,"Registrado por equipo",628,328,13,C.navy,false);
+txt(ctx,f[1]>0?this.n(f[0])+" gal":"—",845,328,14,C.navy,true);
+txt(ctx,"Cargas con unidad reconocida",628,365,13,C.navy,false);
+txt(ctx,String(f[1]|0),845,365,14,C.navy,true);
+txt(ctx,"Sin diésel capturado",628,402,13,C.navy,false);
+txt(ctx,String(f[2]|0),845,402,14,C.navy,true);
+box(ctx,977,230,597,200,C.pale,4);
+txt(ctx,"Disponibilidad y utilización por familia",991,255,18,C.navy,true);
+txt(ctx,"Familia",991,279,12,C.blue,true);
+txt(ctx,"Capturas",1300,279,12,C.blue,true);
+txt(ctx,"Disp.",1390,279,12,C.blue,true);
+txt(ctx,"Util.",1490,279,12,C.blue,true);
+var groups=[];this.records.forEach(function(o){if(o.kpi!==false&&groups.indexOf(o.familia)<0)groups.push(o.familia);}); var yy=305; for(var gi=0;gi<groups.length;gi++){var group=groups[gi], a=this.totals(group);
+txt(ctx,group,991,yy,11,C.navy,false);
+txt(ctx,(a[5]|0)+" / "+(a[6]|0),1300,yy,12,C.navy,false);
+txt(ctx,this.pct(U.ratio(a[0]-a[2]-a[3],a[0])),1390,yy,12,C.navy,false);
+txt(ctx,this.pct(U.ratio(a[1],a[0])),1490,yy,12,C.navy,false);
+yy+=Math.min(25,115/Math.max(1,groups.length));}
+box(ctx,26,442,1548,60,C.pale,4);
+txt(ctx,"Cobertura y estado de la flota",40,466,16,C.navy,true);
+txt(ctx,String(st[0]),430,470,24,C.green,true);
+txt(ctx,"Disponibles",478,470,12,C.navy,false);
+txt(ctx,String(st[1]),660,470,24,C.red,true);
+txt(ctx,"No disponibles",708,470,12,C.navy,false);
+txt(ctx,String(st[3]),890,470,24,C.navy,true);
+txt(ctx,"Total equipos",938,470,12,C.navy,false);
+txt(ctx,"Cobertura KPI",1150,465,14,C.navy,false);
+txt(ctx,this.pct(U.ratio(t[5],t[6])),1390,478,26,C.navy,true);
+txt(ctx,"Indicadores calculados con capturas KPI completas. Horas de mantenimiento = MP + MC. — Dato pendiente.",26,521,11,C.muted,false);
+if(this.signature){ctx.drawImage(this.signature,1280,535,260,38);txt(ctx,"Firma del supervisor",1300,580,11,C.muted,true);}
+this.footer(ctx,page);
 
-    txt(ctx, captured + ' / ' + (t[6] | 0) + ' capturas KPI completas  \u00b7  ' + pending + ' pendientes  \u00b7  ' + (this.records.length - (t[6] | 0)) + ' registros sin KPI', 48, 179, 17, C.muted, false);
-    this.metric(ctx, 48, 199, 358, 'DISPONIBILIDAD MECÁNICA', this.pct(U.ratio(avail, t[0])), 'Horas disponibles / periodo', C.green);
-    this.metric(ctx, 430, 199, 358, 'UTILIZACIÓN EFECTIVA', this.pct(U.ratio(t[1], t[0])), 'Trabajo / periodo', C.blue);
-    this.metric(ctx, 812, 199, 358, 'USO DE DISPONIBILIDAD', this.pct(U.ratio(t[1], avail)), 'Trabajo / horas disponibles', C.gold);
-    this.metric(ctx, 1194, 199, 358, 'CONFIABILIDAD DEL FORMATO', this.pct(U.ratio(t[0] - t[3], t[0])), '(Periodo - MC) / periodo', C.navy);
-
-    box(ctx, 48, 338, 730, 282, C.white, 13);
-    txt(ctx, 'Distribución de horas', 68, 372, 23, C.navy, true);
-    var colors = [C.green, C.gold, C.red, C.gray4];
-    var times = [t[1], t[2], t[3], t[4]];
-    var names = ['Trabajo', 'Preventivo MP', 'Correctivo MC', 'Espera / stand by'];
-    var cx = 166.5, cy = 487.5, rr = 93.5;
-    var angle = -90;
-    for (var i = 0; i < 4; i++) {
-      var sweep = t[0] > 0 ? times[i] * 360 / t[0] : 0;
-      if (sweep > 0) wedge(ctx, cx, cy, rr, angle, angle + sweep, colors[i]);
-      angle += sweep;
-    }
-    if (t[0] === 0) wedge(ctx, cx, cy, rr, 0, 360, C.pale);
-    box(ctx, 108, 429, 117, 117, C.white, 60);
-    txt(ctx, captured > 0 ? this.n(t[0]) : '\u2014', 126, 484, 25, C.navy, true);
-    txt(ctx, 'HORAS', 137, 509, 12, C.muted, true);
-    for (var k = 0; k < 4; k++) {
-      var yy = 410 + k * 43;
-      box(ctx, 290, yy - 13, 11, 11, colors[k], 3);
-      txt(ctx, names[k], 310, yy, 17, C.ink, false);
-      txt(ctx, captured > 0 ? this.n(times[k]) + ' h' : '\u2014', 612, yy, 17, C.ink, true);
-    }
-    txt(ctx, 'Paro total: ' + (captured > 0 ? this.n(t[2] + t[3] + t[4]) + ' h' : '\u2014') + '  \u00b7  Disponibles: ' + (captured > 0 ? this.n(avail) + ' h' : '\u2014'), 290, 589, 15, C.muted, false);
-
-    box(ctx, 804, 338, 748, 282, C.white, 13);
-    txt(ctx, 'Control de diésel', 824, 372, 23, C.navy, true);
-    var loaded = LG.diesel.gallons(this.diesel);
-    txt(ctx, 'TOTAL CARGADO', 824, 407, 13, C.muted, true);
-    txt(ctx, U.finite(loaded) ? this.n(loaded) + ' gal' : '\u2014', 824, 450, 35, C.navy, true);
-    txt(ctx, U.finite(loaded) ? this.n(loaded * LG.diesel.LITERS_PER_GALLON) + ' L' : 'Sin captura del total', 824, 477, 16, C.muted, false);
-    txt(ctx, 'REGISTRADO POR EQUIPO', 1180, 407, 13, C.muted, true);
-    txt(ctx, fuel[1] > 0 ? this.n(fuel[0]) + ' gal' : '\u2014', 1180, 450, 35, C.green, true);
-    txt(ctx, (fuel[1] | 0) + ' cargas con unidad reconocida', 1180, 477, 15, C.muted, false);
-    var difference = U.finite(loaded) && fuel[1] > 0 ? this.n(loaded - fuel[0]) + ' gal' : '\u2014';
-    txt(ctx, 'Diferencia carga - registros: ' + difference, 824, 512, 17, C.ink, true);
-    txt(ctx, 'Carga / h de equipos con lecturas: ' + (fuel[5] > 0 ? this.n(fuel[4] * LG.diesel.LITERS_PER_GALLON / fuel[5]) + ' L/h' : '\u2014'), 824, 541, 17, C.ink, false);
-    txt(ctx, (fuel[2] | 0) + ' equipos sin diésel capturado  \u00b7  ' + (fuel[3] | 0) + ' cantidades sin unidad reconocida', 824, 573, 14, C.muted, false);
-    txt(ctx, 'Control de carga registrada; no equivale a consumo medido.', 824, 603, 13, C.muted, false);
-
-    box(ctx, 48, 641, 1002, 321, C.white, 13);
-    txt(ctx, 'Disponibilidad y utilización por familia', 68, 676, 22, C.navy, true);
-    var fams = [], seen = {};
-    for (var m = 0; m < this.records.length; m++) {
-      if (this.records[m].kpi === false) continue;
-      var fam = this.raw(this.records[m], 'familia');
-      if (!seen[fam]) { seen[fam] = true; fams.push(fam); }
-    }
-    var count = Math.max(1, fams.length), rowH = Math.min(34, 244 / count), yy2 = 705;
-    txt(ctx, 'FAMILIA', 68, yy2, 12, C.muted, true);
-    txt(ctx, 'CAPTURA', 460, yy2, 12, C.muted, true);
-    txt(ctx, 'DISPONIBILIDAD', 565, yy2, 12, C.muted, true);
-    txt(ctx, 'UTILIZACIÓN', 813, yy2, 12, C.muted, true);
-    yy2 += 20;
-    for (var g = 0; g < fams.length; g++) {
-      var name = fams[g];
-      var f = this.totals(name);
-      var fsize = name.length > 29 ? 12 : 14;
-      txt(ctx, name, 68, yy2, fsize, C.ink, true);
-      txt(ctx, (f[5] | 0) + '/' + (f[6] | 0), 468, yy2, 14, C.muted, false);
-      var d = U.ratio(f[0] - f[2] - f[3], f[0]), u = U.ratio(f[1], f[0]);
-      box(ctx, 565, yy2 - 12, 112, 12, C.pale, 3);
-      if (U.finite(d)) box(ctx, 565, yy2 - 12, Math.max(0, Math.min(112, 112 * d)), 12, C.green, 3);
-      txt(ctx, this.pct(d), 690, yy2, 14, C.ink, true);
-      box(ctx, 813, yy2 - 12, 112, 12, C.pale, 3);
-      if (U.finite(u)) box(ctx, 813, yy2 - 12, Math.max(0, Math.min(112, 112 * u)), 12, C.blue, 3);
-      txt(ctx, this.pct(u), 938, yy2, 14, C.ink, true);
-      yy2 += rowH;
-    }
-
-    box(ctx, 1075, 641, 477, 321, C.white, 13);
-    txt(ctx, 'Cobertura y estado de la flota', 1095, 676, 21, C.navy, true);
-    var st = this.states();
-    var status = ['Disponibles', 'No disponibles / mantenimiento', 'Por capturar', 'Total del catálogo'];
-    for (var q = 0; q < 4; q++) {
-      txt(ctx, status[q], 1095, 715 + q * 42, 16, C.muted, false);
-      txt(ctx, String(st[q]), 1490, 715 + q * 42, 22, C.navy, true);
-    }
-    txt(ctx, 'Cobertura KPI', 1095, 895, 16, C.muted, true);
-    txt(ctx, this.pct(U.ratio(t[5], t[6])), 1390, 895, 22, C.green, true);
-    txt(ctx, 'Estado actual y KPI del periodo son distintos.', 1095, 932, 13, C.muted, false);
-
-    this.lines(ctx, 'BASE DE CÁLCULO  \u00b7  Solo capturas KPI completas. Se suman horas antes de calcular porcentajes. Trabajo = horómetro final - inicial. Disponibilidad = (periodo - MP - MC) / periodo. Utilización = trabajo / periodo. Uso de disponibilidad = trabajo / horas disponibles.', 48, 994, 13, this.signature == null ? 1504 : 1200, C.muted, false);
-    this.lines(ctx, 'DIÉSEL  \u00b7  Se reconocen gal y L; cantidades sin unidad se interpretan en gal. 1 gal = 3.7854 L (galón estadounidense). La diferencia de carga es parcial si faltan registros. La carga por hora usa únicamente los equipos con diésel reconocido y lecturas completas.', 48, 1037, 13, this.signature == null ? 1504 : 1200, C.muted, false);
-    if (this.signature) {
-      try { ctx.drawImage(this.signature, 1310, 970, 242, 80); } catch (e) { }
-      txt(ctx, 'Firma del supervisor', 1320, 1069, 12, C.muted, true);
-    }
-    this.footer(ctx, page);
   };
 
   Report.prototype.draw = function (ctx, page) {
