@@ -635,7 +635,7 @@
     ['personal', 'Personal que interviene', observations], ['observaciones', 'Observaciones / mantenimiento', observations]
     ].forEach(function (f) { addField(f[0], field(f[2], f[1], source[f[0]], false)); });
 
-    btn(form, 'Adjuntar fotos / revisar evidencias', false, function () {
+    btn(form, 'Adjuntar fotos y videos / evidencias', false, function () {
       if (index < 0) { toast('Guarda el equipo antes de adjuntar fotos'); return; }
       m.close(); photos(index);
     });
@@ -725,7 +725,7 @@
     var output = card(dom.body);
     t(output, 'Entrega del turno', 20, INK, true);
     t(output, meta().fecha + ' \u00b7 ' + (meta().turno || 'D\u00eda') + '\nSupervisor: ' + fallback(meta().supervisor), 13, MUTED, false);
-    t(output, 'Reporte de 2 hojas: registro de equipos y tablero KPI con di\u00e9sel.', 13, MUTED, false);
+    t(output, 'Registro de equipos y tablero KPI. Si adjuntas videos, el PDF incluye un anexo con miniaturas y enlaces al portal.', 13, MUTED, false);
     btn(output, 'Vista previa', false, function () { preview(); });
     btn(output, 'PDF por WhatsApp', true, function () { exportCurrent(true, true); });
     btn(output, 'PNG por WhatsApp', true, function () { exportCurrent(false, true); });
@@ -733,7 +733,7 @@
     btn(save, 'Guardar PDF', false, function () { exportCurrent(true, false); });
     btn(save, 'Guardar PNG', false, function () { exportCurrent(false, false); });
     btn(output, 'Exportar Excel / CSV', false, function () { csvDialog(); });
-    btn(output, 'Fotos y firma del turno', false, function () { evidence(); });
+    btn(output, 'Fotos, videos y firma del turno', false, function () { evidence(); });
 
     var syncCard = card(dom.body);
     t(syncCard, 'Sincronización de supervisión', 19, INK, true);
@@ -767,7 +767,7 @@
   function syncNow() {
     if (!Sync.configured()) { if (canAdmin()) syncSettings(); else toast('Pide a un administrador configurar el portal'); return; }
     var loading = busyOverlay('Sincronizando supervisión…');
-    Sync.publish().then(function (result) { loading.remove(); toast(result.count ? result.count + ' captura(s) sincronizadas' : 'No hay capturas pendientes'); show(3); }).catch(function (err) { loading.remove(); error(err); });
+    Sync.publish().then(function (result) { loading.remove(); toast(result.count + ' captura(s) y ' + (result.videos || 0) + ' video(s) sincronizados'); show(3); }).catch(function (err) { loading.remove(); error(err); });
   }
 
   function executive(parent) {
@@ -815,10 +815,11 @@
     var copy = JSON.parse(JSON.stringify(records));
     annotatePhotos(copy, turnKeyVal);
     return loadSignature(metaObj.signature).then(function (sig) {
-      return new LG.reportDoc.Report(copy, {
+      var report = new LG.reportDoc.Report(copy, {
         logo: app.logo, date: metaObj.fecha, supervisor: metaObj.supervisor,
         shift: metaObj.turno, diesel: metaObj.diesel, signature: sig
       });
+      return LG.videoEvidence.attach(report, copy, metaObj, turnKeyVal);
     });
   }
 
@@ -1199,7 +1200,7 @@
       if (img._objectUrl) urls.push(img._objectUrl);
     });
     if (canAdmin() || app.role === 'Supervisor') btn(m.content, 'Registrar / reemplazar firma', true, function () { m.close(); sign(); });
-    t(m.content, 'Fotos por equipo', 18, INK, true);
+    t(m.content, 'Fotos y videos por equipo', 18, INK, true);
     app.records.forEach(function (o, index) {
       btn(m.content, opt(o.equipo) + ' #' + opt(o.eco) + ' \u00b7 ' + opt(o.marca), false, function () { m.close(); photos(index); });
     });
@@ -1210,13 +1211,16 @@
     var o = app.records[index];
     if (!o) return;
     var id = opt(o.id);
-    var m = openModal('Fotos del equipo');
+    var m = openModal('Fotos y videos del equipo');
     var urls = [];
     m.onClose = function () { urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (er) { } }); };
     t(m.content, opt(o.equipo) + ' \u00b7 ' + meta().fecha + ' \u00b7 ' + (meta().turno || 'D\u00eda'), 14, INK, true);
     if (app.user) {
       btn(m.content, 'Elegir foto', true, function () { m.close(); selectPhoto(index, false); });
       btn(m.content, 'Tomar foto', false, function () { m.close(); selectPhoto(index, true); });
+      btn(m.content, 'Elegir video', true, function () { selectVideo(index, false, m); });
+      btn(m.content, 'Grabar video', false, function () { selectVideo(index, true, m); });
+      t(m.content, 'Videos MP4 o WebM, máximo 20 MB. Sincroniza antes de exportar el PDF para activar sus enlaces.', 12, MUTED, false);
     }
     var ev = S.rows('evidence');
     var count = 0;
@@ -1233,6 +1237,24 @@
       })(opt(ev[i].fileName));
     }
     if (count === 0) t(m.content, 'Sin fotos en este turno.', 13, MUTED, false);
+    LG.videoEvidence.render(m.content, o, key(), function (url) { urls.push(url); });
+  }
+
+  function selectVideo(index, camera, modal) {
+    if (!canCapture()) return;
+    var equipment = app.records[index];
+    if (!equipment) return;
+    var input = document.createElement('input'); input.type = 'file'; input.accept = 'video/mp4,video/webm';
+    if (camera) input.setAttribute('capture', 'environment');
+    var capturedMeta = meta(), capturedTurn = key();
+    input.onchange = function () {
+      var file = input.files && input.files[0]; if (!file) return;
+      modal.close(); var busy = busyOverlay('Guardando y publicando video…');
+      LG.videoEvidence.add(file, equipment, capturedMeta, capturedTurn, app.user).then(function (row) {
+        busy.remove(); toast(row.synced ? 'Video publicado en supervisión' : 'Video guardado. Pendiente de sincronizar.'); photos(index);
+      }).catch(function (err) { busy.remove(); error(err); });
+    };
+    input.click();
   }
 
   function selectPhoto(index, camera) {
@@ -1338,7 +1360,7 @@
       if (opt(ev.turnKey) !== current) continue;
       index.push(ev);
       var name = opt(ev.fileName);
-      if (!/^[a-zA-Z0-9-]+\.(png|jpg)$/.test(name)) { busy.remove(); toast('Evidencia no disponible'); return; }
+      if (!/^[a-zA-Z0-9-]+\.(png|jpg|mp4|webm)$/.test(name)) { busy.remove(); toast('Evidencia no disponible'); return; }
       (function (nm) {
         chain = chain.then(function () {
           return S.getMedia(nm).then(function (blob) {
@@ -1381,7 +1403,7 @@
     var evidence = root.evidence || [];
     for (var i = 0; i < evidence.length; i++) {
       var name = opt(evidence[i].fileName);
-      if (!/^[a-zA-Z0-9-]+\.(png|jpg)$/.test(name)) return Promise.reject(new Error('Archivo de evidencia inv\u00e1lido'));
+      if (!/^[a-zA-Z0-9-]+\.(png|jpg|mp4|webm)$/.test(name)) return Promise.reject(new Error('Archivo de evidencia inv\u00e1lido'));
       if (added[name]) continue;
       added[name] = true;
       (function (nm) {
@@ -1422,7 +1444,7 @@
         if (names[name]) throw new Error('Respaldo inv\u00e1lido');
         names[name] = true;
         if (name === 'data.json') root = JSON.parse(LG.bytes.fromUtf8(entries[i].data));
-        else if (/^media\/[a-zA-Z0-9-]+\.(png|jpg)$/.test(name)) mediaMap[name.slice(6)] = entries[i].data;
+        else if (/^media\/[a-zA-Z0-9-]+\.(png|jpg|mp4|webm)$/.test(name)) mediaMap[name.slice(6)] = entries[i].data;
         else throw new Error('Ruta no permitida en respaldo');
       }
       if (!root) throw new Error('Falta data.json');
@@ -1458,6 +1480,7 @@
       }
       evidence[i].fileName = name;
     }
+    evidence.forEach(function (ev) { if (ev.posterName && renamed[ev.posterName]) ev.posterName = renamed[ev.posterName]; });
     var settings = root.settings || [];
     for (var s = 0; s < settings.length; s++) {
       if (opt(settings[s].key) === 'meta') {
@@ -1480,7 +1503,7 @@
       for (var p = 0; p < pendingMedia.length; p++) {
         (function (item) {
           chain = chain.then(function () {
-            var mime = item.name.slice(-4).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
+            var mime = /\.mp4$/i.test(item.name) ? 'video/mp4' : /\.webm$/i.test(item.name) ? 'video/webm' : /\.png$/i.test(item.name) ? 'image/png' : 'image/jpeg';
             return S.putMedia(item.name, new Blob([item.data], { type: mime }));
           });
         })(pendingMedia[p]);

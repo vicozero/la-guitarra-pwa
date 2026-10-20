@@ -20,6 +20,10 @@
     var offsets = {};
     var n = pages.length;
     var firstPage = 3;
+    var nextObject = firstPage + n * 3;
+    var annotations = pages.map(function (page) {
+      return (page.links || []).filter(function (link) { return /^https:\/\//.test(link.url); }).map(function (link) { return { number: nextObject++, link: link }; });
+    });
     out.str('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
 
     var kids = [];
@@ -47,10 +51,17 @@
 
       offsets[pageNum] = out.length;
       out.str(pageNum + ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + fmt(img.pageW) + ' ' + fmt(img.pageH) +
-        '] /Resources << /XObject << /Im0 ' + imageNum + ' 0 R >> >> /Contents ' + contentNum + ' 0 R >>\nendobj\n');
+        '] /Resources << /XObject << /Im0 ' + imageNum + ' 0 R >> >> /Contents ' + contentNum + ' 0 R' +
+        (annotations[j].length ? ' /Annots [' + annotations[j].map(function (a) { return a.number + ' 0 R'; }).join(' ') + ']' : '') + ' >>\nendobj\n');
     }
 
-    var totalObjects = firstPage + n * 3 - 1;
+    annotations.forEach(function (list, pageIndex) { list.forEach(function (a) {
+      var link = a.link, h = pages[pageIndex].pageH;
+      var uri = String(link.url).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[\r\n]/g, '');
+      offsets[a.number] = out.length;
+      out.str(a.number + ' 0 obj\n<< /Type /Annot /Subtype /Link /Rect [' + [link.x, h-link.y-link.height, link.x+link.width, h-link.y].map(fmt).join(' ') + '] /Border [0 0 0] /A << /S /URI /URI (' + uri + ') >> >>\nendobj\n');
+    }); });
+    var totalObjects = nextObject - 1;
     var xref = out.length;
     var size = totalObjects + 1;
     var x = 'xref\n0 ' + size + '\n0000000000 65535 f \n';

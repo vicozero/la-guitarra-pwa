@@ -424,6 +424,7 @@ this.footer(ctx,page);
       var jpeg = B.fromBase64(dataUrl.split(',')[1]);
       pages.push({ jpeg: jpeg, imgW: all[i].width, imgH: all[i].height, pageW: all[i].pdfWidth, pageH: all[i].pdfHeight });
     }
+    if (LG.videoEvidence) LG.videoEvidence.appendPages(this, pages);
     return LG.pdf.write(pages);
   };
 
