@@ -8,7 +8,7 @@ rem  Deja esta ventana abierta mientras el taller trabaja.
 rem ===================================================================
 
 rem --- Carpeta de intercambio: debe ser la MISMA que se vincula en la PWA ---
-set "CARPETA=%~dp0ordenes"
+set "CARPETA=%~dp0ordenes\"
 
 rem --- Base de datos del programa. Si esta ruta no existe en tu PC,
 rem     buscala y cambiala aqui, o pasala con --db. ---

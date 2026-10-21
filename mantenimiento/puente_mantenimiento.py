@@ -59,7 +59,14 @@ PRIORIDAD_A_TIPO = {
 
 
 def log(mensaje):
-    print("[%s] %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), mensaje), flush=True)
+    texto = "[%s] %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), mensaje)
+    try:
+        print(texto, flush=True)
+    except UnicodeEncodeError:
+        # Consolas antiguas de Windows (cp1252/cp850) no traen todos los signos.
+        # Se reemplaza lo que no se pueda mostrar en vez de cortar el programa.
+        codificacion = getattr(sys.stdout, "encoding", None) or "ascii"
+        print(texto.encode(codificacion, "replace").decode(codificacion, "replace"), flush=True)
 
 
 def leer_json(ruta):
@@ -257,16 +264,17 @@ class Puente:
         """Deja la alerta legible que el taller ve incluso sin base de datos."""
         lineas = ["ALERTA DE ORDENES DE TRABAJO - La Guitarra", "=" * 46, ""]
         for o in ordenes:
+            detalle = (o.get("details") or "").replace("\n", " ").strip()
             lineas.append(
-                "%s %s  [%s]\n  Turno %s -> %s\n  %s\n  Detalle: %s\n"
+                "%s %s  [%s]\n  %s -> %s\n  %s\n  Detalle: %s\n"
                 % (
                     o.get("equipment") or "Equipo",
                     ("#" + str(o.get("eco"))) if o.get("eco") else "",
                     o.get("priority") or "MEDIA",
-                    o.get("fromShift") or "",
-                    o.get("toShift") or "",
+                    o.get("fromShift") or "—",
+                    o.get("toShift") or "—",
                     o.get("description") or "",
-                    (o.get("details") or "—").replace("\n", " "),
+                    detalle or "sin detalle",
                 )
             )
         lineas.append("Generado: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
