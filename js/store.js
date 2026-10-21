@@ -5,7 +5,7 @@
   var LG = (window.LG = window.LG || {});
   var U = LG.util;
 
-  var BACKUP_TABLES = ['equipment', 'settings', 'turns', 'users', 'orders', 'preventive', 'evidence'];
+  var BACKUP_TABLES = ['equipment', 'settings', 'turns', 'users', 'orders', 'preventive', 'evidence', 'shiftOrders', 'shiftHandoffs'];
   var DB_NAME = 'laguitarra';
   var DB_VERSION = 1;
 
@@ -198,7 +198,7 @@
   }
 
   function put(table, obj) {
-    if (['users', 'orders', 'preventive', 'evidence'].indexOf(table) < 0) throw new Error('Tabla ' + table);
+    if (['users', 'orders', 'preventive', 'evidence', 'shiftOrders', 'shiftHandoffs'].indexOf(table) < 0) throw new Error('Tabla ' + table);
     var a = root[table];
     var id = U.safe(obj.id);
     if (id !== '') for (var i = 0; i < a.length; i++) if (a[i] && U.safe(a[i].id) === id) { a[i] = obj; return save(); }

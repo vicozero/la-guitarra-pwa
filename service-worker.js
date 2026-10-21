@@ -5,7 +5,7 @@
    Sube CACHE al publicar cambios importantes. */
 'use strict';
 
-var CACHE = 'laguitarra-v1.2-video-evidence';
+var CACHE = 'laguitarra-v2-turnos';
 
 var FILES = [
   './',
@@ -28,7 +28,11 @@ var FILES = [
   './js/report-doc.js',
   './js/reports.js',
   './js/video-evidence.js',
+  './js/shift-orders.js',
+  './js/admin.js',
+  './js/maintenance-bridge.js',
   './js/ui.js',
+  './js/shift-ui.js',
   './data/equipos.json',
   './assets/referencia.jpg',
   './assets/logo.png',

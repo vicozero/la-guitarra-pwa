@@ -274,6 +274,7 @@
     if (type === 0) { line(2,11,12,3);line(12,3,22,11);line(5,9,5,21);line(19,9,19,21);line(5,21,19,21);rect(10,14,4,7,0); }
     else if (type === 1) { rect(5, 4, 14, 17, 2); rect(9, 2, 6, 4, 1); line(9, 11, 15, 11); line(9, 16, 15, 16); }
     else if (type === 2) { rect(2, 8, 13, 10, 2); line(15, 11, 20, 11); line(20, 11, 22, 16); line(22, 16, 22, 18); line(15, 18, 22, 18); circle(7, 19, 2); circle(19, 19, 2); }
+    else if (type === 4) { rect(4, 3, 16, 18, 2); line(8, 8, 16, 8); line(8, 12, 16, 12); line(8, 16, 13, 16); }
     else { rect(3,13,3,8,1);rect(10,8,3,13,1);rect(17,3,3,18,1); }
     return svg;
   }
@@ -310,8 +311,8 @@
       return M.image('assets/logo.png').then(function (img) { app.logo = img; }, function () { app.logo = null; });
     }).then(function () {
       show(0);
-      var users = S.rows('users');
-      if (users.length === 0) createProfile(true); else profiles();
+      var ensure = (LG.admin && LG.admin.ensureAdmin) ? LG.admin.ensureAdmin() : Promise.resolve();
+      ensure.then(function () { profiles(); }, function () { profiles(); });
     }).catch(function (err) {
       var root = document.getElementById('app');
       if (!root) return;
@@ -352,15 +353,24 @@
     if (tab === 0) dashboard();
     else if (tab === 1) { turnCard(); equipment(); }
     else if (tab === 2) equipment();
+    else if (tab === 4 && LG.shiftUI) LG.shiftUI.screen(main);
     else reports();
     var nav = e('nav', 'tabs');
-    var names = ['Inicio', 'Captura', 'Equipos', 'Reportes'];
-    for (var i = 0; i < 4; i++) {
+    var names = ['Inicio', 'Captura', 'Equipos', 'Reportes', 'Turnos'];
+    for (var i = 0; i < names.length; i++) {
       (function (n) {
         var b = e('button', 'tab' + (tab === n ? ' active' : '')); b.type = 'button';
         b.style.color = tab === n ? GREEN : MUTED; b.setAttribute('aria-current',tab===n?'page':'false');
         b.appendChild(navIcon(n));
         var l = t(b, names[n], 11, tab === n ? GREEN : MUTED, true); l.classList.add('tab-label');
+        if (n === 4 && LG.shiftUI) {
+          var bc = LG.shiftUI.badgeCount();
+          if (bc > 0) {
+            var dot = e('span', 'tab-badge');
+            dot.textContent = bc > 9 ? '9+' : String(bc);
+            b.appendChild(dot);
+          }
+        }
         b.onclick = function () { show(n); };
         nav.appendChild(b);
       })(i);
@@ -384,7 +394,7 @@
     Object.keys(sums).forEach(function(f){var line=e('div','family-hours');t(line,f.toLocaleLowerCase('es-MX'),11,MUTED,false);var bar=e('div','bar');var fill=e('div','bar-fill');fill.style.width=(sums[f]/max*100)+'%';bar.appendChild(fill);line.appendChild(bar);t(line,U.num(sums[f])+' h',12,INK,true);families.appendChild(line);});
     var cta=btn(grid,'Continuar captura · '+t0[7]+' pendientes  →',true,function(){show(1);},'capture-cta');cta.prepend(navIcon(1));
     var fuel=card(grid);fuel.classList.add('fuel-panel');t(fuel,'Diésel del turno',14,MUTED,false);t(fuel,U.num(LG.diesel.gallons(meta().diesel))+' gal',25,INK,true);t(fuel,'Carga registrada',12,MUTED,false);
-    var actions=expandable(dom.body,'Más acciones del turno',false);btn(actions,'Pendientes por equipo',false,function(){pending();});btn(actions,'Comparativo diario / semanal / mensual',false,function(){comparison();});btn(actions,'Órdenes y calendario preventivo',false,function(){workOrders();});
+    var actions=expandable(dom.body,'Más acciones del turno',false);btn(actions,'Pendientes por equipo',false,function(){pending();});btn(actions,'Comparativo diario / semanal / mensual',false,function(){comparison();});btn(actions,'Órdenes y calendario preventivo',false,function(){workOrders();});btn(actions,'Órdenes entre turnos y mantenimiento',false,function(){show(4);});
     var saved=e('div','saved-note');saved.appendChild(navIcon(1));t(saved,'Guardado en este dispositivo · Disponible sin conexión',12,GREEN,false);dom.body.appendChild(saved);
   }
 
@@ -912,9 +922,14 @@
     var m = openModal('Usuarios locales');
     t(m.content, 'Selecciona tu perfil e introduce su PIN.', 14, MUTED, false);
     users.forEach(function (p) {
-      btn(m.content, p.name + ' \u00b7 ' + p.role, false, function () { m.close(); login(p); });
+      var label = p.name + ' \u00b7 ' + p.role + (p.shift ? ' \u00b7 ' + p.shift : '');
+      btn(m.content, label, false, function () { m.close(); login(p); });
     });
-    if (canAdmin()) btn(m.content, '+ Crear usuario', true, function () { m.close(); createProfile(false); });
+    if (LG.shiftUI) btn(m.content, '\u21c4 \u00d3rdenes entre turnos', false, function () { m.close(); show(4); });
+    if (canAdmin()) {
+      btn(m.content, '+ Crear usuario', true, function () { m.close(); createProfile(false); });
+      if (LG.shiftUI) btn(m.content, '\u2699 Panel de administraci\u00f3n', false, function () { m.close(); LG.shiftUI.adminPanel(); });
+    }
   }
 
   function createProfile(first) {
@@ -925,6 +940,7 @@
     var pin = field(m.content, 'PIN (m\u00ednimo 6 d\u00edgitos)', '', true); pin.type = 'password';
     var confirm = field(m.content, 'Confirmar PIN', '', true); confirm.type = 'password';
     var roles = spinner(m.content, 'Rol', first ? ['Administrador'] : ['Supervisor', 'Mec\u00e1nico', 'Administrador'], first ? 'Administrador' : 'Supervisor');
+    var shiftPick = spinner(m.content, 'Turno asignado', ['Turno 1', 'Turno 2', 'Turno 3'], 'Turno 1');
     btn(m.content, 'Crear usuario', true, function () {
       var n = name.value.trim(), p = pin.value;
       if (n === '') { toast('Escribe un nombre'); return; }
@@ -935,9 +951,10 @@
       }
       var salt = LG.pin.salt();
       LG.pin.hash(p, salt).then(function (hash) {
-        return S.put('users', { id: U.uuid(), name: n, role: roles.value, salt: salt, hash: hash });
+        return S.put('users', { id: U.uuid(), name: n, role: roles.value, salt: salt, hash: hash, shift: shiftPick.value, createdAt: Date.now() });
       }).then(function () {
         if (first) { app.user = n; app.role = 'Administrador'; }
+        if (LG.admin) LG.admin.logAudit('crear_usuario', n + ' \u00b7 ' + roles.value + ' \u00b7 ' + shiftPick.value);
         m.close(); show(app.screen);
       }).catch(error);
     });
@@ -1524,7 +1541,13 @@
     }).catch(function (err) { busy.remove(); error(err); });
   }
 
-  LG.ui = { boot: boot, show: show, toast: toast };
+  LG.ui = {
+    boot: boot, show: show, toast: toast, profiles: profiles,
+    t: t, e: e, opt: opt, row: row, card: card, btn: btn, field: field, dateField: dateField,
+    spinner: spinner, openModal: openModal, alertDialog: alertDialog, error: error,
+    busyOverlay: busyOverlay, meta: meta, applyMeta: applyMeta, canAdmin: canAdmin,
+    navIcon: navIcon, CHART: CHART, INK: INK, GREEN: GREEN, MUTED: MUTED
+  };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
