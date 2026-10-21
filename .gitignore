@@ -1,0 +1,15 @@
+# Artefactos de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Carpetas de intercambio del puente (datos locales, no van al repo)
+mantenimiento/ordenes/
+mantenimiento/*.log
+mantenimiento/puente_estado.json
+mantenimiento/alerta_ordenes.txt
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
